@@ -1,0 +1,42 @@
+# Etape 1 : créer un nouveau projet symfony
+- vous vous placer dans un dossier où vous voulez créer le projet my_project_directory et vous faites
+symfony new my_project_directory --version="6.2.*" --webapp
+- ça vous crée un dossier my_project_directory qui contient les éléments suivants :
+    - un fichier composer.json qui liste les dépendances du projet et notamment toutes les briques qui composent symfony
+    - un dossier config qui contient la config du projet (dans l’immédiat ça ne vous intéressera pas)
+    - un dossier templates qui contient les templates .html.twig qui vont vous permettre de créer des pages frontend
+    - un dossier src qui contient votre code métier et logique. Il contient initialement trois dossiers
+        - Controller où vous placerez les points d’entrées qui vont contenir les routes de votre application (une route = une url de votre application que vous pouvez appeler et qui va lancer une partie du code de votre application)
+        - Entity qui va contenir les modèles, c’est-à-dire les abstractions écrites en php qui vont définir vos tables en base de données (par exemple : des livres et des auteurs dans un outil de gestion de bibliothèque)
+        - Repositoy qui va contenir les fichiers qui permettent de faire le lien entre vos fichiers Entity et votre base de données afin de récupérer les entités ou les écrire en base de données
+un dossier migration qui va contenir vos migrations, c’est-à-dire les fichiers qui font progressivement évoluer votre base de données afin qu’elle “colle” à vos entités écrites en php
+
+Pour démarrer le projet, vous ouvrez deux consoles à la racine de votre projet et vous faites :
+symfony server:start (permet de lancer le serveur web, c’est-à-dire de faire en sorte que votre application symfony soit à l’écoute des requêtes entrantes et les traite)
+docker-compose up (permet de lancer votre base de données en local)
+
+Ensuite :
+ - pour créer une liste de livres : 
+    - symfony console make:controller
+    - modifiez votre nouveau controller afin qu’il passe une liste de livre à la fonction render
+    - modifiez votre nouveau template twig afin qu’il l’affiche en utilisant for en twig
+- pour créer le concept de livre dans la base de données
+    - constatez qu’il n’existe pas en faisant dans une console à la racine du projet : symfony run psql -c '\dt'
+    - ensuite vous faites symfony console make:entity et vous créer une entité Livre qui a un name (suivez bien les instructions)
+    - puis vous faites symfony console make:migration (ça vous crée une migration que vous pouvez aller consulter. si c’est votre première elle est susceptible de contenir des opérations sql supplémentaires qui ne vous intéressent pas liées à symfony)
+    - puis vous lancez la migration pour faire évoluer la base de données symfony console doctrine:migrations:migrate
+    - vous pouvez alors constater qu’une nouvelle table s’est rajoutée en faisant symfony run psql -c '\dt' 
+- créez ensuite une route qui permet de rajouter des livres programmatiquement 
+    - symfony console make:controller
+    - puis mettez dans votre nouvelle route quelque chose qui ressemble à : 
+        $eleve = new Eleve();
+        $eleve->setName('Oussamah');
+        $eleveRepository->save($eleve, true);
+    - pour ce faire vous aurez besoin du repository lié au livre. Symfony vous y donnera accès si vous le demandez en argument de votre route en faisant quelque chose qui ressemble à ça 
+#[Route('/create/eleve', name: 'app_create_eleve')]
+    public function index(EleveRepository $eleveRepository): Response
+    {
+........
+    - vous pourrez alors appeler cette route et constater en écrivant une requête sql que votre nouveau livre s’est créé : symfony run psql -c 'SELECT * from livre'
+- pour afficher la liste des livres venues de la DB dans votre page initiale : 
+    - récupérer tous les livres en faisant quelque chose qui ressemble à $eleves = $eleveRepository->findAll();et injecter cette valeur dans votre fichier twig à l’aide de render.
